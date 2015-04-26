@@ -1,0 +1,115 @@
+---
+title: "Pratical Machine Learning Project"
+author: "Yvonne Low"
+date: "26 April, 2015"
+output: html_document
+---
+#Executive Summary
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
+
+The aim of this report was to use data from accelerometers placed on the belt, forearm, arm, and dumbell of six participants to predict how well they were doing the exercise in terms of the classification in the data.
+
+## Open Libraries
+```{r}
+library(caret, lib.loc="/Users/Yvonne/Documents/R packages/")
+#library(corrplot, lib.loc="/Users/Yvonne/Documents/R packages/")
+#library(kernlab, lib.loc="/Users/Yvonne/Documents/R packages/")
+#library(knitr, lib.loc="/Users/Yvonne/Documents/R packages/")
+library(rpart, lib.loc="/Users/Yvonne/Documents/R packages/")
+library(e1071, lib.loc="/Users/Yvonne/Documents/R packages/")
+library(randomForest, lib.loc="/Users/Yvonne/Documents/R packages/")
+```
+
+#Loading and preprocessing the data
+##Download input files
+```{r}
+#training_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+#testing_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+dest_training <- "/Users/Yvonne/Documents/Yvonne Low/Data Science Course/Practical Machine Learning/data/pml-training.csv"
+dest_testing <-  "/Users/Yvonne/Documents/Yvonne Low/Data Science Course/Practical Machine Learning/data/pml-testing.csv"
+#download.file(url=training_url, destfile=dest_training, method="curl")
+#download.file(url=testing_url, destfile=dest_testing, method="curl")
+```
+
+##Treat empty values as NA.
+```{r}
+df_training <- read.csv(dest_training, na.strings=c("NA",""), header=TRUE)
+colnames_train <- colnames(df_training)
+df_testing <- read.csv(dest_testing, na.strings=c("NA",""), header=TRUE)
+colnames_test <- colnames(df_testing)
+```
+
+##1 useful step to verify that the column names are identical in the training and test set.
+```{r}
+all.equal(colnames_train[1:length(colnames_train)-1], colnames_test[1:length(colnames_train)-1])
+```
+
+##Count the number of non-NAs in each col.
+```{r}
+nonNAs <- function(x) {
+  as.vector(apply(x, 2, function(x) length(which(!is.na(x)))))
+}
+# Build vector of missing data or NA columns to drop.
+colcnts <- nonNAs(df_training)
+drops <- c()
+for (cnt in 1:length(colcnts)) {
+  if (colcnts[cnt] < nrow(df_training)) {
+    drops <- c(drops, colnames_train[cnt])
+  }
+}
+```
+There was a lot of NA values in the data which would create a lot of noise for the model. As a result, these columns were removed from the data set. The first eight columns that acted as identifiers for the experiment were also removed.
+## Drop NA columns
+```{r}
+df_training <- df_training[,!(names(df_training) %in% drops)]
+df_testing <- df_testing[,!(names(df_testing) %in% drops)]
+```
+
+## Drop identifier columns in the first 7 columns
+```{r}
+df_training <- df_training[,8:length(colnames(df_training))]
+df_testing <- df_testing[,8:length(colnames(df_testing))]
+# Show remaining columns.
+colnames(df_training)
+```
+
+## Check for covariates
+```{r}
+#nsv <- nearZeroVar(df_training, saveMetrics=TRUE)
+#nsv
+```
+
+#Create the model
+The test data set was split up into training and cross validation sets in a 60:40 ratio in order to train the model and then test it against data it was not specifically fitted to.
+## Split the training data again into training and cross validation
+```{r}
+set.seed(102)
+inTrain <- createDataPartition(y = df_training$classe, p = 0.6, list = FALSE)
+training <- df_training[inTrain, ]
+crossval <- df_training[-inTrain, ]
+```
+
+##Fit a model to predict the classe using everything else as a predictor
+```{r}
+model <- randomForest(classe ~ ., data = training)
+```
+
+##Crossvalidate the model using the remaining 40% of data
+The model was then used to classify the remaining 40% of data. The results were placed in a confusion matrix along with the actual classifications in order to determine the accuracy of the model.
+```{r}
+predictCrossVal <- predict(model, crossval)
+confusionMatrix(crossval$classe, predictCrossVal)
+```
+This model yielded a 99.3% prediction accuracy. Again, this model proved very robust and adequete to predict new data.
+
+#Prediction
+## Predict the classes of the original Testing data
+A separate data set was then loaded into R and cleaned in the same manner as before. The model was then used to predict the classifications of the 20 results of this new data.
+```{r}
+predictTest <- predict(model, df_testing)
+predictTest
+```
+
+#Conclusion
+The accuracy of the model is 99.38% giving: 
+B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
