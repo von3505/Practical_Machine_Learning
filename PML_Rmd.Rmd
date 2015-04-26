@@ -2,7 +2,7 @@
 title: "Pratical Machine Learning Project"
 author: "Yvonne Low"
 date: "26 April, 2015"
-output: html_document
+output: pdf_document
 ---
 #Executive Summary
 Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
@@ -75,8 +75,8 @@ colnames(df_training)
 
 ## Check for covariates
 ```{r}
-#nsv <- nearZeroVar(df_training, saveMetrics=TRUE)
-#nsv
+nsv <- nearZeroVar(df_training, saveMetrics=TRUE)
+nsv
 ```
 
 #Create the model
